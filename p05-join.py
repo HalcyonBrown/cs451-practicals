@@ -10,6 +10,7 @@ import gzip, json
 from shared import dataset_local_path, TODO
 from dataclasses import dataclass
 from typing import Dict, List
+from sklearn.ensemble import RandomForestClassifier
 
 
 """
@@ -61,11 +62,31 @@ print(len(pages), len(labels))
 print(pages[0])
 print(labels[0])
 
-joined_data: Dict[str, JoinedWikiData] = {}
 
-
-# TODO("1. create a list of JoinedWikiData from the ``pages`` and ``labels`` lists.")
+# "1. create a list of JoinedWikiData from the ``pages`` and ``labels`` lists.")
+# ***Solution help from Prof Foley in class
 # This challenge has some very short solutions, so it's more conceptual. If you're stuck after ~10-20 minutes of thinking, ask!
+joined_data: Dict[str, JoinedWikiData] = {}
+# First I need to organize the labels list by wiki_id
+labels_by_id: Dict[str, JustWikiLabel] = {}
+for label in labels:
+    labels_by_id[label.wiki_id] = label
+
+# Second I need to use the wiki_id to find the corresponding page in order to pair the two together
+for page in pages:
+    # handle the case where a page is missing a label
+    if page.wiki_id not in labels_by_id:
+        print("This page is missing its label: ", page.wiki_id)  # or use the title
+        continue
+    # locate the label for the current page using the page's wiki_id
+    page_label = labels_by_id[page.wiki_id]
+    # assemble the new row with all the correct variables
+    final_row = JoinedWikiData(
+        page.wiki_id, page_label.is_literary, page.title, page.body
+    )
+    # finally, add the final_row to joined_data for each page in pages where the dictionary key is the wiki_id
+    joined_data[final_row.wiki_id] = final_row
+
 ############### Problem 1 ends here ###############
 
 # Make sure it is solved correctly!
@@ -127,6 +148,7 @@ models = {
     "Perceptron": Perceptron(),
     "LogisticRegression": LogisticRegression(),
     "DTree": DecisionTreeClassifier(),
+    "RandomForest": RandomForestClassifier(),
 }
 
 for name, m in models.items():
@@ -154,11 +176,21 @@ LogisticRegression:
 DTree:
         Vali-Acc: 0.739
         Vali-AUC: 0.71
+RandomForest:
+        Vali-Acc: 0.819
+        Vali-AUC: 0.883
 """
-TODO("2. Explore why DecisionTrees are not beating linear models. Answer one of:")
-TODO("2.A. Is it a bad depth?")
-TODO("2.B. Do Random Forests do better?")
-TODO(
-    "2.C. Is it randomness? Use simple_boxplot and bootstrap_auc/bootstrap_acc to see if the differences are meaningful!"
+# ("2. Explore why DecisionTrees are not beating linear models. Answer one of:")
+# ("2.A. Is it a bad depth?")
+# ("2.B. Do Random Forests do better?")
+print(
+    """Answer to Question 2.B. Do Random Forests do better?:\nThe Random Forest model yields better results than the Decision Tree model when run on our 
+Is This Wiki Page Literary dataset. The Random Forest model sees results on par/similar
+to the other linear models. While the Decision Tree runs through the dataset and makes splitting decisions
+until it is done creating categories, the Random Forest acts like a combination of many Decision Trees 
+in that it makes many randomized decisions and then ultimately makes a decision based on the majority of 
+previous decisions. Like we saw in a previous practical, this method of bootstrapping can increase the 
+accuracy of decision tree models."""
 )
-TODO("2.D. Is it randomness? Control for random_state parameters!")
+# ("2.C. Is it randomness? Use simple_boxplot and bootstrap_auc/bootstrap_acc to see if the differences are meaningful!")
+# ("2.D. Is it randomness? Control for random_state parameters!")
