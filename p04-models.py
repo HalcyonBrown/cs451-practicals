@@ -33,7 +33,7 @@ with open(dataset_local_path("poetry_id.jsonl")) as fp:
 ## CONVERT TO MATRIX:
 
 feature_numbering = DictVectorizer(sort=True)
-X = feature_numbering.fit_transform(examples)
+X = feature_numbering.fit_transform(examples)  # /1000
 
 print("Features as {} matrix.".format(X.shape))
 

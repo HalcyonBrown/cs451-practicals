@@ -1,4 +1,8 @@
 """
+Halcyon Brown
+Practical 03
+3/15/2021
+
 In this lab, we'll go ahead and use the sklearn API to compare some real models over real data!
 Same data as last time, for now.
 
@@ -9,7 +13,7 @@ We'll need to install sklearn, and numpy.
 Use pip:
 
     # install everything from the requirements file.
-    pip install -r requirements.txt
+    pip3 install -r requirements.txt
 """
 
 #%%
@@ -77,7 +81,7 @@ X_train, X_vali, y_train, y_vali = train_test_split(
 #%% DecisionTree Parameters:
 params = {
     "criterion": "gini",
-    "splitter": "best",
+    "splitter": "best",  # changing this to random = much higher variance
     "max_depth": 5,
 }
 
@@ -86,13 +90,14 @@ N_MODELS = 100
 # sample 1 of them 100 times, to get a distribution of data for that!
 N_SAMPLES = 100
 
+# Calculating the seed-based accuracies
 seed_based_accuracies = []
 for randomness in range(N_MODELS):
     f_seed = DecisionTreeClassifier(random_state=RANDOM_SEED + randomness, **params)
     f_seed.fit(X_train, y_train)
     seed_based_accuracies.append(f_seed.score(X_vali, y_vali))
 
-
+# Calculating the bootstrap-based accuracies
 bootstrap_based_accuracies = []
 # single seed, bootstrap-sampling of predictions:
 f_single = DecisionTreeClassifier(random_state=RANDOM_SEED, **params)
@@ -107,7 +112,8 @@ for trial in range(N_SAMPLES):
     score = accuracy_score(y_true=sample_truth, y_pred=sample_pred)
     bootstrap_based_accuracies.append(score)
 
-
+"""
+# Creating the boxplot to visualize our results
 boxplot_data: List[List[float]] = [seed_based_accuracies, bootstrap_based_accuracies]
 plt.boxplot(boxplot_data)
 plt.xticks(ticks=[1, 2], labels=["Seed-Based", "Bootstrap-Based"])
@@ -117,12 +123,58 @@ plt.ylim([0.8, 1.0])
 plt.show()
 # if plt.show is not working, try opening the result of plt.savefig instead!
 # plt.savefig("dtree-variance.png") # This doesn't work well on repl.it.
+"""
+# **************************************************************************
+# Practical Questions
+# **************************************************************************
 
-TODO("1. understand/compare the bounds generated between the two methods.")
-TODO("2. Do one of the two following experiments.")
-TODO(
-    "2A. Evaluation++: what happens to the variance if we do K bootstrap samples for each of M models?"
+# 1. understand/compare the bounds generated between the two methods.
+print(
+    """Answer to Question 1:\nWhen the splitter parameter is defined as best, there is less variation in the two 
+different methods than when this parameter is set to random. The Seed-Based method when 
+using the splitter parameter had minimal spread with y bounds ranging from about 0.906
+to 0.915. The median looks to be about central within the IQR, with slightly more spread
+along the lower whisker. In comparison, the Bootstrap-Based method, with the splitter parameter
+set to best, resulted in more overall variance (y bounds from about 0.888 to 0.935), indicated 
+by longer whiskers and a bigger IQR box. The median remains central. The Bootrapping method in 
+this case resulted in visibly more variance in accuracy. This leads me to believe that 
+decision trees are not greatly affected by randomness."""
 )
-TODO(
-    "2B. Return to experimenting on the decision tree: modify the plot to show ~10 max_depths of the decision tree."
+
+# "2. Do one of the two following experiments."
+# "2A. Evaluation++: what happens to the variance if we do K bootstrap samples for each of M models?"
+# "2B. Return to experimenting on the decision tree: modify the plot to show ~10 max_depths of the decision tree."
+
+# CODE FOR QUESTION 2B
+max_depth = 11
+N2_SAMPLES = 100
+depth_based_accuracies = []
+
+for depth in range(1, max_depth):
+    # start with a single seed
+    f_single = DecisionTreeClassifier(random_state=RANDOM_SEED, max_depth=depth)
+    f_single.fit(X_train, y_train)
+    y_pred = f_single.predict(X_vali)
+    depth_specific_accuracies = []
+
+    # perform and calculate accuracies from 100 bootstrap samples
+    for trial in range(N2_SAMPLES):
+        sample_pred, sample_truth = resample(
+            y_pred, y_vali, random_state=trial + RANDOM_SEED
+        )
+        score = accuracy_score(y_true=sample_truth, y_pred=sample_pred)
+        depth_specific_accuracies.append(score)
+    depth_based_accuracies.append(depth_specific_accuracies)
+
+
+# CREATING BOXPLOT FOR 2B
+boxplot_data: List[List[float]] = depth_based_accuracies
+plt.boxplot(boxplot_data)
+plt.xticks(
+    ticks=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    labels=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
 )
+plt.xlabel("Depth Level")
+plt.ylabel("Bootstrap Method Accuracy")
+plt.ylim([0.7, 1.0])
+plt.show()
