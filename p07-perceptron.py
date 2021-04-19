@@ -68,7 +68,20 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 #
 # These are the three approaches to scaling I see in practice: variance / standard-deviation, min/max, nothing.
 # This replaces the X / 1000 hack we did a few weeks ago.
-norm = "max"
+
+print(
+    """Exploration 2: \n For all of the models, scaling by the variance is visually more effective. It 
+typically produces consistently higher accuracies and the peaks and dips of the accuracies are tighter together. 
+For the Multi Layer Perceptron model, scaling by the variance and the max were pretty similar. However, 
+scaling by the variance showed a bigger discrepancy between the train and validate curves, whereas scaling
+by the max showed a much smaller difference between the train and validate curves. In all the models, scaling
+by max or var produced better results than not scaling at all. We can't normalize for decision trees because
+it just won't affect our classification results. The data will still result in the same splits and therefore the 
+same overall classification. 
+"""
+)
+
+norm = "var"
 if norm == "var":
     scale = StandardScaler()
     X_train = scale.fit_transform(rX_train)
@@ -240,10 +253,25 @@ print("skP. Vali-Accuracy: {:.3}".format(skP.score(X_vali, y_vali)))
 #
 ## TODO Exploration 1A: Try a MLP (Multi-Layer Perceptron).
 mlp = MLPClassifier(hidden_layer_sizes=(32,))
+for iter in tqdm(range(1000)):
+    mlp.partial_fit(X_train, y_train, classes=(0, 1))
+    learning_curves["mlPerceptron"].add_sample(mlp, X_train, y_train, X_vali, y_vali)
+print("mlp. Train-Accuracy: {:.3}".format(mlp.score(X_train, y_train)))
+print("mlp. Vali-Accuracy: {:.3}".format(mlp.score(X_vali, y_vali)))
+
+
 ## TODO Exploration 1B: Try another Linear Model
 sgdc = SGDClassifier()
 
 ## TODO Think: Why can't we make a graph like this for DecisionTreeClassifier?
+print(
+    """Why can't we make a graph like this for DecisionTreeClassifier?:\n
+We need to let the Decision Tree Classifier run the whole way through its classification
+before we can analyze the results. It needs to make all of its splits in order to finish
+the classification. A graph like this would be possible for a RandomForestClassifier 
+that acts like the cumulation of many decision trees.
+"""
+)
 
 #%% Plot!
 

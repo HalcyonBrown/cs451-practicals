@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 import json
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 #%% load up the data
 examples = []
@@ -48,7 +49,7 @@ X_test: np.ndarray = scale.transform(rX_test)  # type:ignore
 #%% Actually compute performance for each % of training data
 N = len(y_train)
 num_trials = 100
-percentages = list(range(5, 100, 5))
+percentages = list(range(5, 100, 5))  # list(range(5, N, 50))
 percentages.append(100)
 scores = {}
 acc_mean = []
@@ -67,7 +68,11 @@ for train_percent in percentages:
             X_train, y_train, n_samples=n_samples, replace=False
         )  # type:ignore
         # Note here, I'm using a simple classifier for speed, rather than the best.
-        clf = SGDClassifier(random_state=RANDOM_SEED + train_percent + i)
+        # clf = SGDClassifier(random_state=RANDOM_SEED + train_percent + i)
+        # clf.fit(X_sample, y_sample)
+        clf = RandomForestClassifier(
+            criterion="entropy", random_state=RANDOM_SEED + train_percent + i
+        )
         clf.fit(X_sample, y_sample)
         # so we get 100 scores per percentage-point.
         scores[label].append(clf.score(X_vali, y_vali))
@@ -102,5 +107,66 @@ simple_boxplot(
 # TODO: (practical tasks)
 # 1. Swap in a better, but potentially more expensive classifier.
 #    - Even DecisionTreeClassifier has some more interesting behavior on these plots.
+print(
+    """1. I swapped in a RandomForestClassifier, and it looks like there is more of an increase
+in accuracy as the sample size gets larger than with the SGDClassifier which tappered off more. This 
+means that we could see an increase in accuracy as we add another 200-500 samples. The variace (shown
+by the boxplots) gets smaller and smaller as the sample size increases. With 100 percent of the samples, 
+we see a squished box plot, but it does have more outliers.
+"""
+)
 # 2. Change the plots to operate over multiples of 50 samples, instead of percentages.
 #    - This will likely be how you want to make these plots for your project.
+
+#%% Actually compute performance for multiples of 50 samples of training data
+N = len(y_train)
+num_samples = list(range(10, N, 50))
+num_trials = 100
+num_samples.append(N)
+scores = {}
+acc_mean = []
+acc_std = []
+
+# Which subset of data will potentially really matter.
+for train_samples in num_samples:
+    print("{} samples...".format(train_samples))
+    label = "{}".format(train_samples)
+
+    # So we consider num_trials=100 subsamples, and train a model on each.
+    scores[label] = []
+    for i in range(num_trials):
+        X_sample, y_sample = resample(
+            X_train, y_train, n_samples=train_samples, replace=False
+        )  # type:ignore
+        # Note here, I'm using a simple classifier for speed, rather than the best.
+        clf = SGDClassifier(random_state=RANDOM_SEED + train_samples + i)
+        clf.fit(X_sample, y_sample)
+        # so we get 100 scores per percentage-point.
+        scores[label].append(clf.score(X_vali, y_vali))
+    # We'll first look at a line-plot of the mean:
+    acc_mean.append(np.mean(scores[label]))
+    acc_std.append(np.std(scores[label]))
+
+# First, try a line plot, with shaded variance regions:
+import matplotlib.pyplot as plt
+
+means = np.array(acc_mean)
+std = np.array(acc_std)
+plt.plot(num_samples, acc_mean, "o-")
+# plt.fill_between(num_samples, means - std, means + std, alpha=0.2)
+plt.xlabel("Samples Training Data")
+plt.ylabel("Mean Accuracy")
+# plt.xlim([0, 100])
+plt.title("Shaded Accuracy Plot")
+plt.savefig("graphs/p09-area-Accuracy.png")
+plt.show()
+
+
+# Second look at the boxplots in-order: (I like this better, IMO)
+simple_boxplot(
+    scores,
+    "Learning Curve",
+    xlabel="Samples Training Data",
+    ylabel="Accuracy",
+    save="graphs/p09-boxplots-Accuracy.png",
+)
