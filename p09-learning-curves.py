@@ -83,10 +83,15 @@ for train_percent in percentages:
 # First, try a line plot, with shaded variance regions:
 import matplotlib.pyplot as plt
 
+# convert our list of means/std to numpy arrays so we can add & subtract them.
 means = np.array(acc_mean)
 std = np.array(acc_std)
+# plot line from means
 plt.plot(percentages, acc_mean, "o-")
+# plot area from means & stddev
 plt.fill_between(percentages, means - std, means + std, alpha=0.2)
+
+# Manage axes/show:
 plt.xlabel("Percent Training Data")
 plt.ylabel("Mean Accuracy")
 plt.xlim([0, 100])
