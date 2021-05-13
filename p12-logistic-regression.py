@@ -119,18 +119,20 @@ def train_logistic_regression_gd(name: str, num_iter=100):
     return m
 
 
-m = train_logistic_regression_gd("LR-GD", num_iter=2000)
-print("LR-GD AUC: {:.3}".format(np.mean(bootstrap_auc(m, X_vali, y_vali))))
-print("LR-GD Acc: {:.3}".format(m.score(X_vali, y_vali)))
+# m = train_logistic_regression_gd("LR-GD", num_iter=2000)
+# print("LR-GD AUC: {:.3}".format(np.mean(bootstrap_auc(m, X_vali, y_vali))))
+# print("LR-GD Acc: {:.3}".format(m.score(X_vali, y_vali)))
 
 
-def train_logistic_regression_sgd_opt(name: str, num_iter=100, minibatch_size=512):
+def train_logistic_regression_sgd_opt(
+    name: str, num_iter=100, minibatch_size=512, alpha=0.1
+):
     """ This is bootstrap-sampling minibatch SGD """
     plot = ModelTrainingCurve()
+    name = name + "_" + str(alpha)
     learning_curves[name] = plot
 
     m = LogisticRegressionModel.random(D)
-    alpha = 0.1
     n_samples = max(1, N // minibatch_size)
 
     for _ in tqdm(range(num_iter), total=num_iter, desc=name):
@@ -142,10 +144,13 @@ def train_logistic_regression_sgd_opt(name: str, num_iter=100, minibatch_size=51
     return m
 
 
-m = train_logistic_regression_sgd_opt("LR-SGD", num_iter=2000)
-print("LR-SGD AUC: {:.3}".format(np.mean(bootstrap_auc(m, X_vali, y_vali))))
-print("LR-SGD Acc: {:.3}".format(m.score(X_vali, y_vali)))
-
+# make a graph including some faster and slower alphas:
+alpha_values = [0.05, 0.1, 0.5, 1.0]
+for i in range(len(alpha_values)):
+    alpha = alpha_values[i]
+    m = train_logistic_regression_sgd_opt("LR-SGD", num_iter=500, alpha=alpha)
+    print("LR-SGD AUC: {:.3}".format(np.mean(bootstrap_auc(m, X_vali, y_vali))))
+    print("LR-SGD Acc: {:.3}".format(m.score(X_vali, y_vali)))
 
 ## Create training curve plots:
 import matplotlib.pyplot as plt
@@ -176,10 +181,14 @@ plt.show()
 
 # TODO:
 #
-# 1. pick SGD or GD (I recommend SGD)
-# 2. pick a smaller max_iter that gets good performance.
+# 1. pick SGD or GD (I recommend SGD) --> SGD
+# 2. pick a smaller max_iter that gets good performance --> 500 steps
 
 # Do either A or B:
+print(
+    """I pick SGD with a max_iter of 500 steps, and I am exploring
+    learning rates."""
+)
 
 # (A) Explore Learning Rates:
 #
@@ -187,6 +196,19 @@ plt.show()
 # 4. make a graph including some faster and slower alphas:
 # .... alpha = [0.05, 0.1, 0.5, 1.0]
 # .... what do you notice?
+print(
+    """Just by observing the graphs of the training curves and the validation curves, 
+    I can see that increasing the alpha value resulted in an SGD model that reached its
+    peak accuracy in much fewer iterations. For the training curves, it took the model 
+    with an alpha value of 0.05 approximately 500 iterations to start leveling off, while
+    it took the SGD model with an alpha value of 1.0 about 150 iterations to level off. 
+    For the validation curves, it took the SGD model with an alpha of 0.05 about 175 iterations
+    to level off, whereas it took about 50 iterations for the SGD model with an alpha of 1.0
+    to level off. The alpha value is the learning rate of the model, which means its momentum.
+    I can see from this exercise that increasing the momentum leads the model to reach its
+    peak accuracy level in less iterations.
+"""
+)
 
 # (B) Explore 'Automatic/Early Stopping'
 #

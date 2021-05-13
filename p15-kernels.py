@@ -41,10 +41,15 @@ graphs = {
 from sklearn.svm import SVC as SVMClassifier
 
 configs = []
-configs.append({"kernel": "linear"})
-configs.append({"kernel": "poly", "degree": 2})
-configs.append({"kernel": "poly", "degree": 3})
-configs.append({"kernel": "rbf"})
+# configs.append({"kernel": "linear"})
+# configs.append({"kernel": "poly", "degree": 2})
+# configs.append({"kernel": "poly", "degree": 3})
+configs.append({"kernel": "rbf", "gamma": "scale"})
+configs.append({"kernel": "rbf", "gamma": 10.0})
+configs.append({"kernel": "rbf", "gamma": 1.0})
+configs.append({"kernel": "rbf", "gamma": 0.1})
+configs.append({"kernel": "rbf", "gamma": 0.001})
+configs.append({"kernel": "rbf", "gamma": 0.00001})
 # configs.append({"kernel": "sigmoid"}) # just awful.
 
 
@@ -63,11 +68,16 @@ class ModelInfo:
 for cfg in configs:
     variants: T.List[ModelInfo] = []
     for class_weights in [None, "balanced"]:
-        for c_val in [1.0]:
+        for c_val in [0.1, 1.0, 10.0, 100.0, 1000.0]:
             svm = SVMClassifier(C=c_val, class_weight=class_weights, **cfg)
             svm.fit(X_train, y_train)
+            if cfg.get("degree") == None:
+                cfg_gamma = cfg.get("gamma", "")
             name = "k={}{} C={} {}".format(
-                cfg["kernel"], cfg.get("degree", ""), c_val, class_weights or ""
+                cfg["kernel"],
+                cfg.get("degree", cfg_gamma),
+                c_val,
+                class_weights or "",
             )
             accuracy = svm.score(X_vali, y_vali)
             print("{}. score= {:.3}".format(name, accuracy))
